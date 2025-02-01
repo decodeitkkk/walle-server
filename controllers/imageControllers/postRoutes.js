@@ -1,7 +1,7 @@
 import express from "express";
 import * as dotenv from "dotenv";
 import { v2 as cloudinary } from "cloudinary";
-import Post from "../models/post.js";
+import Post from "../../models/post.js";
 import ImageKit from "imagekit";
 
 dotenv.config();
@@ -13,7 +13,7 @@ const imagekit = new ImageKit({
     privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
     urlEndpoint: "https://upload.imagekit.io/api/v1/files/upload",
 });
-router.route("/").post(async (req, res) => {
+const postRoutes = async (req, res) => {
     try {
         let { name, prompt, photo } = await req.body;
 
@@ -26,7 +26,7 @@ router.route("/").post(async (req, res) => {
             photo === "" ||
             !photo
         ) {
-            return res.status(404).send("all fields are mandatory !!!")
+            return res.status(404).send("all fields are mandatory !!!");
         }
 
         // IMAGEKIT FILE UPLOAD HERE
@@ -55,6 +55,6 @@ router.route("/").post(async (req, res) => {
         console.log(error);
         res.status(500).send(`error !!! ${error}`);
     }
-});
+};
 
-export default router;
+export default postRoutes;

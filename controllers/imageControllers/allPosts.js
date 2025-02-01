@@ -1,20 +1,86 @@
 import express from "express";
 import * as dotenv from "dotenv";
-import axios from "axios";
-import ImageKit from "imagekit";
+import PostSchema from "../../models/post.js";
 
+import { v2 as cloudinary } from "cloudinary";
+import Post from "../../models/post.js";
+import ImageKit from "imagekit";
+import axios from "axios";
 dotenv.config();
 
-const router = express.Router();
-
-// Initialize ImageKit
+// INITIALIZE IMAGEKIT HERE
 const imagekit = new ImageKit({
     publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
     privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
     urlEndpoint: "https://upload.imagekit.io/api/v1/files/upload",
 });
 
-router.route("/").post(async (req, res) => {
+// all posts controller
+const allPosts = async (req, res) => {
+    /*
+        -   get post from DB
+        -   send to frontend
+
+    */
+
+    try {
+        let posts = await PostSchema.find().sort({ createdAt: -1 });
+        // console.log(posts);
+        res.status(200).send({
+            posts,
+        });
+    } catch (error) {
+        console.log(error);
+    }
+};
+
+// share to community posts controller
+const postImage = async (req, res) => {
+    try {
+        let { name, prompt, photo } = await req.body;
+
+        // CHECK FOR EMPTY FIELDS HERE
+        if (
+            !prompt ||
+            prompt.trim() === "" ||
+            !name ||
+            name.trim() === "" ||
+            photo === "" ||
+            !photo
+        ) {
+            return res.status(404).send("all fields are mandatory !!!");
+        }
+
+        // IMAGEKIT FILE UPLOAD HERE
+        /*
+        const uploadResponse = await imagekit.upload({
+            file: photo,
+            fileName: name,
+        });
+        */
+
+        // SAVE IN DATABASE
+        const newPost = await Post.create({
+            name,
+            prompt,
+            image: photo,
+        });
+
+        console.log(newPost);
+
+        res.status(200).send({
+            newPost,
+            success: true,
+            message: "Image shared successfully",
+        });
+    } catch (error) {
+        console.log(error);
+        res.status(500).send(`error !!! ${error}`);
+    }
+};
+
+// create image via clipdrop's LLM controller
+const createImage = async (req, res) => {
     /*
         > name form frontend
         > check prompt isn't empty
@@ -74,18 +140,6 @@ router.route("/").post(async (req, res) => {
         console.log(error);
         res.status(500).send("Something went wrong!");
     }
-});
+};
 
-export default router;
-
-/*
-// Convert image data to base64
-        const base64Image = Buffer.from(response.data, "binary").toString(
-            "base64"
-        );
-
-        // Send the image as a base64 string to the frontend
-        res.status(200).json({
-            photo: `data:image/png;base64,${base64Image}`,
-        });
-*/
+export { allPosts, createImage, postImage };
